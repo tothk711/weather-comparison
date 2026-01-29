@@ -21,7 +21,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1600px;
             margin: 0 auto;
         }
 
@@ -41,39 +41,10 @@
             font-size: 0.95rem;
         }
 
-        .controls {
+        .top-controls {
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        label {
-            color: #aaa;
-            font-size: 0.9rem;
-        }
-
-        select {
-            padding: 10px 20px;
-            font-size: 1rem;
-            border: none;
-            border-radius: 8px;
-            background: #0f3460;
-            color: #eee;
-            cursor: pointer;
-            outline: none;
-        }
-
-        select:hover {
-            background: #1a4a7a;
+            margin-bottom: 20px;
         }
 
         .refresh-btn {
@@ -97,32 +68,98 @@
             cursor: not-allowed;
         }
 
-        .chart-container {
+        .graphs-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1000px) {
+            .graphs-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-panel {
             background: #16213e;
             border-radius: 16px;
-            padding: 30px;
+            padding: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .chart-header label {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .chart-header select {
+            padding: 8px 16px;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 8px;
+            background: #0f3460;
+            color: #eee;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .chart-header select:hover {
+            background: #1a4a7a;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 350px;
         }
 
         .legend-custom {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin-top: 20px;
+            gap: 15px;
+            margin-top: 15px;
             flex-wrap: wrap;
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
+            gap: 6px;
+            font-size: 0.8rem;
         }
 
-        .legend-color {
+        .legend-line {
             width: 30px;
-            height: 4px;
-            border-radius: 2px;
+            height: 0;
+            border-bottom-width: 3px;
+            border-bottom-style: solid;
+        }
+
+        .legend-line.dotted-light-red {
+            border-color: #ff9999;
+            border-bottom-style: dotted;
+        }
+
+        .legend-line.dashed-red {
+            border-color: #e94560;
+            border-bottom-style: dashed;
+        }
+
+        .legend-line.solid-green {
+            border-color: #4ecca3;
+            border-bottom-width: 5px;
+        }
+
+        .legend-line.dashed-light-green {
+            border-color: #90EE90;
+            border-bottom-style: dashed;
         }
 
         .status-bar {
@@ -132,24 +169,16 @@
             font-size: 0.8rem;
         }
 
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #666;
-            font-size: 1.1rem;
-        }
-
         .error {
             text-align: center;
             padding: 40px;
             color: #e94560;
             background: rgba(233, 69, 96, 0.1);
             border-radius: 12px;
-            margin-top: 20px;
         }
 
         @media (max-width: 600px) {
-            .chart-container {
+            .chart-panel {
                 padding: 15px;
             }
             
@@ -158,11 +187,15 @@
             }
 
             .legend-custom {
-                gap: 10px;
+                gap: 8px;
             }
 
             .legend-item {
-                font-size: 0.75rem;
+                font-size: 0.7rem;
+            }
+
+            .chart-wrapper {
+                height: 300px;
             }
         }
     </style>
@@ -174,35 +207,66 @@
             <p>Temperature trends: past 2 days vs today & tomorrow predictions</p>
         </header>
 
-        <div class="controls">
-            <div class="control-group">
-                <label for="citySelect">City:</label>
-                <select id="citySelect">
-                    <option value="">Loading cities...</option>
-                </select>
-            </div>
-            <button class="refresh-btn" onclick="refreshData()">🔄 Refresh Data</button>
+        <div class="top-controls">
+            <button class="refresh-btn" onclick="refreshData()">🔄 Refresh All Data</button>
         </div>
 
-        <div class="chart-container">
-            <canvas id="tempChart"></canvas>
-            
-            <div class="legend-custom">
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #888;"></div>
-                    <span>2 Days Ago</span>
+        <div class="graphs-container">
+            <!-- Left Graph - Czech Cities -->
+            <div class="chart-panel">
+                <div class="chart-header">
+                    <label for="leftCitySelect">City:</label>
+                    <select id="leftCitySelect"></select>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #e94560;"></div>
-                    <span>Yesterday</span>
+                <div class="chart-wrapper">
+                    <canvas id="leftChart"></canvas>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #4ecca3;"></div>
-                    <span>Today</span>
+                <div class="legend-custom">
+                    <div class="legend-item">
+                        <div class="legend-line dotted-light-red"></div>
+                        <span>2 Days Ago</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line dashed-red"></div>
+                        <span>Yesterday</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line solid-green"></div>
+                        <span>Today</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line dashed-light-green"></div>
+                        <span>Tomorrow</span>
+                    </div>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #f9a826;"></div>
-                    <span>Tomorrow</span>
+            </div>
+
+            <!-- Right Graph - Other Cities -->
+            <div class="chart-panel">
+                <div class="chart-header">
+                    <label for="rightCitySelect">City:</label>
+                    <select id="rightCitySelect"></select>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="rightChart"></canvas>
+                </div>
+                <div class="legend-custom">
+                    <div class="legend-item">
+                        <div class="legend-line dotted-light-red"></div>
+                        <span>2 Days Ago</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line dashed-red"></div>
+                        <span>Yesterday</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line solid-green"></div>
+                        <span>Today</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line dashed-light-green"></div>
+                        <span>Tomorrow</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -213,47 +277,63 @@
     </div>
 
     <script>
-        let chart = null;
-        let currentCity = 'Prague';
+        // City groups
+        const czechCities = ['Prague', 'Brno', 'Plzen', 'Ostrava'];
+        const otherCities = ['Budapest', 'Debrecen', 'Berlin', 'Munich'];
+
+        // Charts
+        let leftChart = null;
+        let rightChart = null;
+
+        // Current selections
+        let leftCity = 'Prague';
+        let rightCity = 'Budapest';
 
         // Initialize
         async function init() {
-            await loadCities();
-            await loadWeatherData();
+            setupDropdowns();
+            await Promise.all([
+                loadWeatherData('left', leftCity),
+                loadWeatherData('right', rightCity)
+            ]);
         }
 
-        // Load cities dropdown
-        async function loadCities() {
-            try {
-                const res = await fetch('/api/cities');
-                const cities = await res.json();
-                
-                const select = document.getElementById('citySelect');
-                select.innerHTML = cities.map(city => 
-                    `<option value="${city}" ${city === currentCity ? 'selected' : ''}>${city}</option>`
-                ).join('');
-                
-                select.addEventListener('change', (e) => {
-                    currentCity = e.target.value;
-                    loadWeatherData();
-                });
-            } catch (err) {
-                console.error('Error loading cities:', err);
-            }
+        // Setup dropdowns
+        function setupDropdowns() {
+            const leftSelect = document.getElementById('leftCitySelect');
+            const rightSelect = document.getElementById('rightCitySelect');
+
+            // Czech cities on left
+            leftSelect.innerHTML = czechCities.map(city => 
+                `<option value="${city}" ${city === leftCity ? 'selected' : ''}>${city}</option>`
+            ).join('');
+
+            // Other cities on right
+            rightSelect.innerHTML = otherCities.map(city => 
+                `<option value="${city}" ${city === rightCity ? 'selected' : ''}>${city}</option>`
+            ).join('');
+
+            leftSelect.addEventListener('change', (e) => {
+                leftCity = e.target.value;
+                loadWeatherData('left', leftCity);
+            });
+
+            rightSelect.addEventListener('change', (e) => {
+                rightCity = e.target.value;
+                loadWeatherData('right', rightCity);
+            });
         }
 
-        // Load weather data for selected city
-        async function loadWeatherData() {
+        // Load weather data for a chart
+        async function loadWeatherData(side, cityName) {
             try {
-                const res = await fetch(`/api/weather/${currentCity}`);
+                const res = await fetch(`/api/weather/${cityName}`);
                 const data = await res.json();
                 
-                renderChart(data);
+                renderChart(side, cityName, data);
                 updateStatus(data.updatedAt);
             } catch (err) {
-                console.error('Error loading weather data:', err);
-                document.querySelector('.chart-container').innerHTML = 
-                    '<div class="error">Error loading weather data. Try refreshing.</div>';
+                console.error(`Error loading weather data for ${cityName}:`, err);
             }
         }
 
@@ -274,78 +354,90 @@
             
             try {
                 await fetch('/api/fetch', { method: 'POST' });
-                await loadWeatherData();
+                await Promise.all([
+                    loadWeatherData('left', leftCity),
+                    loadWeatherData('right', rightCity)
+                ]);
             } catch (err) {
                 console.error('Error refreshing data:', err);
                 alert('Error refreshing data. Try again.');
             } finally {
-                btn.textContent = '🔄 Refresh Data';
+                btn.textContent = '🔄 Refresh All Data';
                 btn.disabled = false;
             }
         }
 
-        // Render the chart
-        function renderChart(data) {
-            const ctx = document.getElementById('tempChart').getContext('2d');
+        // Render chart
+        function renderChart(side, cityName, data) {
+            const canvasId = side === 'left' ? 'leftChart' : 'rightChart';
+            const ctx = document.getElementById(canvasId).getContext('2d');
             
             const hours = Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`);
             
             // Destroy existing chart
-            if (chart) {
-                chart.destroy();
+            if (side === 'left' && leftChart) {
+                leftChart.destroy();
+            } else if (side === 'right' && rightChart) {
+                rightChart.destroy();
             }
 
-            chart = new Chart(ctx, {
+            const newChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: hours,
                     datasets: [
                         {
+                            // 2 Days Ago - dotted light red
                             label: `2 Days Ago (${data.twoDaysAgo.date})`,
                             data: data.twoDaysAgo.temps,
-                            borderColor: '#888',
-                            backgroundColor: 'rgba(136, 136, 136, 0.1)',
+                            borderColor: '#ff9999',
+                            backgroundColor: 'transparent',
                             borderWidth: 2,
+                            borderDash: [2, 4],
                             tension: 0.3,
-                            pointRadius: 1,
-                            pointHoverRadius: 5,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
                         },
                         {
+                            // Yesterday - dashed heavy red (longer dashes)
                             label: `Yesterday (${data.yesterday.date})`,
                             data: data.yesterday.temps,
                             borderColor: '#e94560',
-                            backgroundColor: 'rgba(233, 69, 96, 0.1)',
+                            backgroundColor: 'transparent',
                             borderWidth: 3,
+                            borderDash: [10, 5],
                             tension: 0.3,
-                            pointRadius: 2,
-                            pointHoverRadius: 6,
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
                         },
                         {
+                            // Today - solid thick green
                             label: `Today (${data.today.date})`,
                             data: data.today.temps,
                             borderColor: '#4ecca3',
                             backgroundColor: 'rgba(78, 204, 163, 0.1)',
-                            borderWidth: 3,
+                            borderWidth: 5,
                             tension: 0.3,
                             pointRadius: 2,
                             pointHoverRadius: 6,
                         },
                         {
+                            // Tomorrow - dashed light green (longer dashes)
                             label: `Tomorrow (${data.tomorrow.date})`,
                             data: data.tomorrow.temps,
-                            borderColor: '#f9a826',
-                            backgroundColor: 'rgba(249, 168, 38, 0.1)',
+                            borderColor: '#90EE90',
+                            backgroundColor: 'transparent',
                             borderWidth: 2,
-                            borderDash: [5, 5],
+                            borderDash: [10, 5],
                             tension: 0.3,
-                            pointRadius: 1,
-                            pointHoverRadius: 5,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
                         },
                     ]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     interaction: {
                         mode: 'index',
                         intersect: false,
@@ -372,14 +464,14 @@
                         },
                         title: {
                             display: true,
-                            text: `Temperature in ${currentCity}`,
+                            text: `Temperature in ${cityName}`,
                             color: '#fff',
                             font: {
-                                size: 18,
+                                size: 16,
                                 weight: 'bold'
                             },
                             padding: {
-                                bottom: 20
+                                bottom: 15
                             }
                         }
                     },
@@ -390,7 +482,10 @@
                             },
                             ticks: {
                                 color: '#888',
-                                maxTicksLimit: 12,
+                                maxTicksLimit: 8,
+                                font: {
+                                    size: 10
+                                }
                             }
                         },
                         y: {
@@ -399,19 +494,23 @@
                             },
                             ticks: {
                                 color: '#888',
+                                font: {
+                                    size: 10
+                                },
                                 callback: function(value) {
                                     return value + '°C';
                                 }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Temperature (°C)',
-                                color: '#888'
                             }
                         }
                     }
                 }
             });
+
+            if (side === 'left') {
+                leftChart = newChart;
+            } else {
+                rightChart = newChart;
+            }
         }
 
         // Start the app
