@@ -473,8 +473,8 @@
             }
         }
 
-        // Check if 0°C line should be visible
-        function shouldShowZeroLine(data) {
+        // Get min/max temps and check if 0°C line should be visible
+        function analyzeTemps(data) {
             const allTemps = [
                 ...data.twoDaysAgo.temps,
                 ...data.yesterday.temps,
@@ -488,7 +488,9 @@
             const max = Math.max(...allTemps);
             
             // Show zero line if data crosses or gets close to 0
-            return min < 2 && max > -2;
+            const showZeroLine = min < 2 && max > -2;
+            
+            return { min, max, showZeroLine };
         }
 
         // Render chart
@@ -506,7 +508,7 @@
             }
 
             const displayName = cityName === 'Czechia' ? 'Czechia (Average)' : cityName;
-            const showZeroLine = shouldShowZeroLine(data);
+            const { min, max, showZeroLine } = analyzeTemps(data);
 
             // Build annotations
             const annotations = {};
@@ -522,12 +524,16 @@
                         display: false
                     }
                 };
-                annotations.coldZone = {
-                    type: 'box',
-                    yMin: -50,
-                    yMax: 0,
-                    backgroundColor: 'rgba(100, 149, 237, 0.1)',
-                    borderWidth: 0
+                // Only add cold zone if there are actually negative temps
+                if (min < 0) {
+                    annotations.coldZone = {
+                        type: 'box',
+                        yMin: min - 2,  // Dynamic: 2 degrees below lowest temp
+                        yMax: 0,
+                        backgroundColor: 'rgba(100, 149, 237, 0.1)',
+                        borderWidth: 0
+                    };
+                }
                 };
             }
 
