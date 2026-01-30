@@ -48,18 +48,26 @@ async function fetchWeatherFromAPI(city) {
   // Get 8 days of history (for 7 days ago to yesterday) and 3 days forecast
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&hourly=temperature_2m&past_days=8&forecast_days=3&timezone=Europe%2FPrague`;
   
-  // Also fetch yesterday's forecast for today (previous run from ~11 AM yesterday)
-  // previous_day=1 means "forecast made 1 day ago"
-  const previousRunUrl = `https://previous-runs-api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&hourly=temperature_2m&forecast_days=3&past_days=0&previous_day=1&timezone=Europe%2FPrague`;
+  // Previous Runs API - get both current forecast AND yesterday's forecast in one call
+  // temperature_2m = current/latest forecast
+  // temperature_2m_previous_day1 = forecast from 1 day ago (yesterday ~11 AM)
+  const previousRunUrl = `https://previous-runs-api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&hourly=temperature_2m_previous_day1&forecast_days=3&timezone=Europe%2FPrague`;
   
   try {
+    // Fetch both APIs in parallel
     const [response, prevResponse] = await Promise.all([
       fetch(url),
-      fetch(previousRunUrl)
+      fetch(previousRunUrl).catch(err => {
+        console.log(`Previous runs API failed for ${city.name}:`, err.message);
+        return null;
+      })
     ]);
     
     const data = await response.json();
-    const prevData = await prevResponse.json();
+    let prevData = null;
+    if (prevResponse && prevResponse.ok) {
+      prevData = await prevResponse.json();
+    }
     
     if (!data.hourly) {
       throw new Error('No hourly data in response');
@@ -113,9 +121,10 @@ async function fetchWeatherFromAPI(city) {
     }
 
     // Fill in yesterday's forecast for today (from previous run API)
-    if (prevData && prevData.hourly) {
+    // The field is named temperature_2m_previous_day1
+    if (prevData && prevData.hourly && prevData.hourly.temperature_2m_previous_day1) {
       const prevTimes = prevData.hourly.time;
-      const prevTemps = prevData.hourly.temperature_2m;
+      const prevTemps = prevData.hourly.temperature_2m_previous_day1;
       
       for (let i = 0; i < prevTimes.length; i++) {
         const dateStr = prevTimes[i].split('T')[0];
