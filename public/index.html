@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Comparison</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <style>
         * {
             margin: 0;
@@ -124,7 +125,7 @@
         .legend-custom {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 12px;
             margin-top: 15px;
             flex-wrap: wrap;
         }
@@ -132,15 +133,20 @@
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 0.8rem;
+            gap: 5px;
+            font-size: 0.75rem;
         }
 
         .legend-line {
-            width: 30px;
+            width: 25px;
             height: 0;
             border-bottom-width: 3px;
             border-bottom-style: solid;
+        }
+
+        .legend-line.past-avg {
+            border-color: rgba(255, 200, 200, 0.5);
+            border-bottom-width: 2px;
         }
 
         .legend-line.dotted-light-red {
@@ -161,6 +167,12 @@
         .legend-line.dashed-light-green {
             border-color: #90EE90;
             border-bottom-style: dashed;
+        }
+
+        .legend-line.dotted-light-green {
+            border-color: #90EE90;
+            border-bottom-style: dotted;
+            border-bottom-width: 2px;
         }
 
         .status-bar {
@@ -196,11 +208,11 @@
             }
 
             .legend-custom {
-                gap: 8px;
+                gap: 6px;
             }
 
             .legend-item {
-                font-size: 0.7rem;
+                font-size: 0.65rem;
             }
 
             .chart-wrapper {
@@ -232,6 +244,10 @@
                 </div>
                 <div class="legend-custom">
                     <div class="legend-item">
+                        <div class="legend-line past-avg"></div>
+                        <span>Past Avg (3-7d)</span>
+                    </div>
+                    <div class="legend-item">
                         <div class="legend-line dotted-light-red"></div>
                         <span>2 Days Ago</span>
                     </div>
@@ -246,6 +262,10 @@
                     <div class="legend-item">
                         <div class="legend-line dashed-light-green"></div>
                         <span>Tomorrow</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line dotted-light-green"></div>
+                        <span>Day After</span>
                     </div>
                 </div>
             </div>
@@ -261,6 +281,10 @@
                 </div>
                 <div class="legend-custom">
                     <div class="legend-item">
+                        <div class="legend-line past-avg"></div>
+                        <span>Past Avg (3-7d)</span>
+                    </div>
+                    <div class="legend-item">
                         <div class="legend-line dotted-light-red"></div>
                         <span>2 Days Ago</span>
                     </div>
@@ -275,6 +299,10 @@
                     <div class="legend-item">
                         <div class="legend-line dashed-light-green"></div>
                         <span>Tomorrow</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line dotted-light-green"></div>
+                        <span>Day After</span>
                     </div>
                 </div>
             </div>
@@ -357,16 +385,18 @@
                 yesterday: { date: citiesData[0].yesterday.date, temps: [] },
                 today: { date: citiesData[0].today.date, temps: [] },
                 tomorrow: { date: citiesData[0].tomorrow.date, temps: [] },
+                dayAfterTomorrow: { date: citiesData[0].dayAfterTomorrow.date, temps: [] },
+                pastDaysAvg: { date: 'avg', temps: [] },
                 updatedAt: citiesData[0].updatedAt
             };
 
             // Calculate average for each hour
             for (let hour = 0; hour < 24; hour++) {
-                ['twoDaysAgo', 'yesterday', 'today', 'tomorrow'].forEach(day => {
+                ['twoDaysAgo', 'yesterday', 'today', 'tomorrow', 'dayAfterTomorrow', 'pastDaysAvg'].forEach(day => {
                     let sum = 0;
                     let count = 0;
                     citiesData.forEach(cityData => {
-                        if (cityData[day].temps[hour] !== null) {
+                        if (cityData[day] && cityData[day].temps[hour] !== null) {
                             sum += cityData[day].temps[hour];
                             count++;
                         }
@@ -443,6 +473,24 @@
             }
         }
 
+        // Check if 0°C line should be visible
+        function shouldShowZeroLine(data) {
+            const allTemps = [
+                ...data.twoDaysAgo.temps,
+                ...data.yesterday.temps,
+                ...data.today.temps,
+                ...data.tomorrow.temps,
+                ...data.dayAfterTomorrow.temps,
+                ...(data.pastDaysAvg ? data.pastDaysAvg.temps : [])
+            ].filter(t => t !== null);
+            
+            const min = Math.min(...allTemps);
+            const max = Math.max(...allTemps);
+            
+            // Show zero line if data crosses or gets close to 0
+            return min < 2 && max > -2;
+        }
+
         // Render chart
         function renderChart(side, cityName, data) {
             const canvasId = side === 'left' ? 'leftChart' : 'rightChart';
@@ -458,12 +506,48 @@
             }
 
             const displayName = cityName === 'Czechia' ? 'Czechia (Average)' : cityName;
+            const showZeroLine = shouldShowZeroLine(data);
+
+            // Build annotations
+            const annotations = {};
+            if (showZeroLine) {
+                annotations.zeroLine = {
+                    type: 'line',
+                    yMin: 0,
+                    yMax: 0,
+                    borderColor: '#4a90d9',
+                    borderWidth: 3,
+                    borderDash: [],
+                    label: {
+                        display: false
+                    }
+                };
+                annotations.coldZone = {
+                    type: 'box',
+                    yMin: -50,
+                    yMax: 0,
+                    backgroundColor: 'rgba(100, 149, 237, 0.1)',
+                    borderWidth: 0
+                };
+            }
 
             const newChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: hours,
                     datasets: [
+                        {
+                            // Past days average (3-7 days ago) - very light red, transparent
+                            label: `Past Avg (3-7 days)`,
+                            data: data.pastDaysAvg ? data.pastDaysAvg.temps : Array(24).fill(null),
+                            borderColor: 'rgba(255, 200, 200, 0.5)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 0,
+                            pointHoverRadius: 3,
+                            order: 6,
+                        },
                         {
                             // 2 Days Ago - dotted light red
                             label: `2 Days Ago (${data.twoDaysAgo.date})`,
@@ -475,6 +559,7 @@
                             tension: 0.3,
                             pointRadius: 0,
                             pointHoverRadius: 4,
+                            order: 5,
                         },
                         {
                             // Yesterday - dashed heavy red (longer dashes)
@@ -487,6 +572,7 @@
                             tension: 0.3,
                             pointRadius: 0,
                             pointHoverRadius: 5,
+                            order: 4,
                         },
                         {
                             // Today - solid thick green
@@ -498,6 +584,7 @@
                             tension: 0.3,
                             pointRadius: 2,
                             pointHoverRadius: 6,
+                            order: 1,
                         },
                         {
                             // Tomorrow - dashed light green (longer dashes)
@@ -510,6 +597,20 @@
                             tension: 0.3,
                             pointRadius: 0,
                             pointHoverRadius: 4,
+                            order: 2,
+                        },
+                        {
+                            // Day After Tomorrow - thin dotted light green
+                            label: `Day After (${data.dayAfterTomorrow.date})`,
+                            data: data.dayAfterTomorrow.temps,
+                            borderColor: '#90EE90',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1,
+                            borderDash: [2, 4],
+                            tension: 0.3,
+                            pointRadius: 0,
+                            pointHoverRadius: 3,
+                            order: 3,
                         },
                     ]
                 },
@@ -559,6 +660,9 @@
                             padding: {
                                 bottom: 15
                             }
+                        },
+                        annotation: {
+                            annotations: annotations
                         }
                     },
                     scales: {

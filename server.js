@@ -45,8 +45,8 @@ function getDateString(offsetDays = 0) {
 
 // Fetch weather data from Open-Meteo for a city
 async function fetchWeatherFromAPI(city) {
-  // Get 3 days of history and 2 days forecast
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&hourly=temperature_2m&past_days=3&forecast_days=2&timezone=Europe%2FPrague`;
+  // Get 8 days of history (for 7 days ago to yesterday) and 3 days forecast
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&hourly=temperature_2m&past_days=8&forecast_days=3&timezone=Europe%2FPrague`;
   
   try {
     const response = await fetch(url);
@@ -56,17 +56,31 @@ async function fetchWeatherFromAPI(city) {
       throw new Error('No hourly data in response');
     }
 
-    // Parse the data into our 4 days
-    const twoDaysAgo = getDateString(-2);
-    const yesterday = getDateString(-1);
-    const today = getDateString(0);
-    const tomorrow = getDateString(1);
+    // Parse the data into our days
+    const days = {
+      sevenDaysAgo: getDateString(-7),
+      sixDaysAgo: getDateString(-6),
+      fiveDaysAgo: getDateString(-5),
+      fourDaysAgo: getDateString(-4),
+      threeDaysAgo: getDateString(-3),
+      twoDaysAgo: getDateString(-2),
+      yesterday: getDateString(-1),
+      today: getDateString(0),
+      tomorrow: getDateString(1),
+      dayAfterTomorrow: getDateString(2),
+    };
 
     const result = {
-      twoDaysAgo: { date: twoDaysAgo, temps: Array(24).fill(null) },
-      yesterday: { date: yesterday, temps: Array(24).fill(null) },
-      today: { date: today, temps: Array(24).fill(null) },
-      tomorrow: { date: tomorrow, temps: Array(24).fill(null) },
+      sevenDaysAgo: { date: days.sevenDaysAgo, temps: Array(24).fill(null) },
+      sixDaysAgo: { date: days.sixDaysAgo, temps: Array(24).fill(null) },
+      fiveDaysAgo: { date: days.fiveDaysAgo, temps: Array(24).fill(null) },
+      fourDaysAgo: { date: days.fourDaysAgo, temps: Array(24).fill(null) },
+      threeDaysAgo: { date: days.threeDaysAgo, temps: Array(24).fill(null) },
+      twoDaysAgo: { date: days.twoDaysAgo, temps: Array(24).fill(null) },
+      yesterday: { date: days.yesterday, temps: Array(24).fill(null) },
+      today: { date: days.today, temps: Array(24).fill(null) },
+      tomorrow: { date: days.tomorrow, temps: Array(24).fill(null) },
+      dayAfterTomorrow: { date: days.dayAfterTomorrow, temps: Array(24).fill(null) },
       updatedAt: new Date().toISOString()
     };
 
@@ -79,16 +93,29 @@ async function fetchWeatherFromAPI(city) {
       const hour = parseInt(times[i].split('T')[1].split(':')[0]);
       const temp = temps[i];
 
-      if (dateStr === twoDaysAgo) {
-        result.twoDaysAgo.temps[hour] = temp;
-      } else if (dateStr === yesterday) {
-        result.yesterday.temps[hour] = temp;
-      } else if (dateStr === today) {
-        result.today.temps[hour] = temp;
-      } else if (dateStr === tomorrow) {
-        result.tomorrow.temps[hour] = temp;
+      // Match to the correct day
+      for (const [key, dayData] of Object.entries(result)) {
+        if (key !== 'updatedAt' && dayData.date === dateStr) {
+          dayData.temps[hour] = temp;
+          break;
+        }
       }
     }
+
+    // Calculate average of past days (3 to 7 days ago)
+    const pastDaysAvg = { date: 'avg', temps: Array(24).fill(null) };
+    for (let hour = 0; hour < 24; hour++) {
+      let sum = 0;
+      let count = 0;
+      ['sevenDaysAgo', 'sixDaysAgo', 'fiveDaysAgo', 'fourDaysAgo', 'threeDaysAgo'].forEach(day => {
+        if (result[day].temps[hour] !== null) {
+          sum += result[day].temps[hour];
+          count++;
+        }
+      });
+      pastDaysAvg.temps[hour] = count > 0 ? sum / count : null;
+    }
+    result.pastDaysAvg = pastDaysAvg;
 
     return result;
   } catch (error) {
