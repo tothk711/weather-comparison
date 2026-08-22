@@ -1,5 +1,6 @@
-Temperature Zephyr — frozen snapshot "Versions/1.0"
-App version: 1.4.1 (see README changelog)
-Frozen: 2026-07-07
-Status: verified working (14 unit tests, 17 e2e checks vs mocked API)
-Run it: npm install && npm start
+Zephyr Weather 3.0.0
+Date: 2026-08-21
+Status: verified — 128 unit + route tests green, lint clean, 0 npm audit findings,
+        every tab exercised in a headless browser at three viewport widths.
+Run it: npm install && npm start   (offline: npm run mock)
+Renamed from "Temperature Zephyr / Weather Comparison 2.0" in this release.

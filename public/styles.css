@@ -1,0 +1,567 @@
+/* ===========================================================================
+   Zephyr Weather 3.0
+   ---------------------------------------------------------------------------
+   v2.0 kept 680 lines of CSS inside index.html. It lives here now, built on a
+   token layer so colour, spacing and — importantly — the hover timings are set
+   in one place instead of being hand-typed into forty rules.
+   =========================================================================== */
+
+:root {
+  /* surfaces */
+  --bg-0: #12162b;
+  --bg-1: #1a1f3a;
+  --bg-2: #16213e;
+  --bg-3: #0f3460;
+  --bg-4: #1a4a7a;
+  --ink:  #e8eefb;
+  --ink-2: #b6c4da;
+  --ink-3: #8fa3b8;
+  --ink-4: #6b7c93;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+
+  /* accents */
+  --acc:  #4ecca3;
+  --acc-2: #7ff5c9;
+  --warm: #e9b44c;
+  --hot:  #e94560;
+  --cool: #6db6ff;
+  --cyan: #00CED1;
+  --lime: #90EE90;
+
+  /* ------------------------------------------------------------------
+     HOVER TIMINGS — every interactive response in the app is derived
+     from these. v2.0 used 0.15–0.2 s CSS transitions plus the browser's
+     native title tooltip, which does not appear for roughly half a
+     second. v3.0 halves the transitions and replaces the native tooltip
+     with one that shows in 120 ms.
+     ------------------------------------------------------------------ */
+  --hover-fast: 0.10s;   /* was 0.20s */
+  --hover-med:  0.12s;   /* was 0.25s */
+  --tip-fade:   0.11s;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 10px 34px rgba(0, 0, 0, 0.38);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.5);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: radial-gradient(1200px 700px at 12% -10%, #24305c 0%, transparent 60%),
+              linear-gradient(160deg, #12162b 0%, #0d1428 55%, #131a33 100%);
+  background-color: #10152a;
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 22px 20px 40px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container { max-width: 1640px; margin: 0 auto; }
+
+/* ---- header ------------------------------------------------------------- */
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand img { width: 36px; height: 36px; border-radius: 9px; display: block; }
+.brand h1 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.brand h1 .ver { color: var(--acc); font-weight: 600; font-size: 0.78rem; vertical-align: 0.5em; margin-left: 5px; }
+.brand .today-date { color: var(--ink-3); font-size: 0.8rem; margin-top: 2px; }
+
+.header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.refresh-btn {
+  padding: 9px 16px;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--acc);
+  color: #10203a;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background var(--hover-fast) ease, transform var(--hover-fast) ease;
+}
+.refresh-btn:hover:not(:disabled) { background: var(--acc-2); transform: translateY(-1px); }
+.refresh-btn:active:not(:disabled) { transform: translateY(0); }
+.refresh-btn:disabled { background: #3c4763; color: var(--ink-3); cursor: not-allowed; }
+
+.status-pill {
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+/* ---- tabs --------------------------------------------------------------- */
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+  background: rgba(9, 14, 30, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 5px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  padding: 9px 18px;
+  font-size: 0.88rem;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background var(--hover-fast) ease, color var(--hover-fast) ease;
+}
+.tab-btn:hover { background: rgba(255, 255, 255, 0.07); color: var(--ink); }
+.tab-btn.active { background: var(--acc); color: #10203a; }
+.tab-btn.active:hover { background: var(--acc-2); }
+
+/* ---- controls ----------------------------------------------------------- */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.controls label { color: var(--ink-3); font-size: 0.82rem; font-weight: 600; }
+.controls .spacer { flex: 1 1 auto; }
+
+select, .btn {
+  padding: 8px 13px;
+  font-size: 0.86rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: background var(--hover-fast) ease, border-color var(--hover-fast) ease;
+}
+select:hover, .btn:hover { background: var(--bg-4); border-color: var(--line-strong); }
+select:focus-visible, .btn:focus-visible { border-color: var(--acc); }
+
+/* segmented control (Chart / Values) */
+.seg {
+  display: inline-flex;
+  background: rgba(9, 14, 30, 0.6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 3px;
+}
+.seg button {
+  border: none;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  padding: 6px 13px;
+  border-radius: 7px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background var(--hover-fast) ease, color var(--hover-fast) ease;
+}
+.seg button:hover { background: rgba(255, 255, 255, 0.07); color: var(--ink); }
+.seg button.on { background: var(--acc); color: #10203a; }
+
+/* ---- panels ------------------------------------------------------------- */
+
+.panel {
+  background: linear-gradient(180deg, rgba(30, 40, 74, 0.85) 0%, var(--bg-2) 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.graphs-container { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 1080px) { .graphs-container { grid-template-columns: 1fr; } }
+
+.chart-header {
+  display: flex; align-items: center; gap: 9px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.chart-header label { color: var(--ink-3); font-size: 0.82rem; font-weight: 600; }
+.chart-wrapper { position: relative; height: 358px; }
+
+.panel-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+.panel-sub { font-size: 0.74rem; color: var(--ink-4); margin-bottom: 12px; }
+
+/* ---- legend ------------------------------------------------------------- */
+
+.legend-custom {
+  display: flex; justify-content: center; gap: 9px;
+  margin-top: 13px; flex-wrap: wrap;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.75rem; cursor: pointer; user-select: none;
+  padding: 4px 8px; border-radius: 7px; color: var(--ink-2);
+  transition: background var(--hover-fast) ease, opacity var(--hover-fast) ease, color var(--hover-fast) ease;
+}
+.legend-item:hover { background: rgba(255, 255, 255, 0.09); color: var(--ink); }
+.legend-item.legend-hidden { opacity: 0.38; }
+.legend-item.legend-hidden span { text-decoration: line-through; }
+.legend-line { width: 24px; height: 0; border-bottom-width: 3px; border-bottom-style: solid; flex: none; }
+.legend-line.past-avg { border-color: rgba(255, 200, 200, 0.5); border-bottom-width: 2px; }
+.legend-line.dotted-light-red { border-color: #ff9999; border-bottom-style: dotted; }
+.legend-line.dashed-red { border-color: var(--hot); border-bottom-style: dashed; }
+.legend-line.solid-green { border-color: var(--acc); border-bottom-width: 5px; }
+.legend-line.dashed-cyan { border-color: var(--cyan); border-bottom-style: dashed; }
+.legend-line.dashed-light-green { border-color: var(--lime); border-bottom-style: dashed; }
+.legend-line.dotted-cyan { border-color: var(--cyan); border-bottom-style: dotted; border-bottom-width: 2px; }
+.legend-line.dotted-light-green { border-color: var(--lime); border-bottom-style: dotted; border-bottom-width: 2px; }
+
+/* ---- badges ------------------------------------------------------------- */
+
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: 999px;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  white-space: nowrap; border: 1px solid transparent; user-select: none;
+  line-height: 1.35;
+  transition: filter var(--hover-fast) ease, transform var(--hover-fast) ease;
+}
+.badge:hover { filter: brightness(1.22); transform: translateY(-1px); }
+/* State classes are namespaced with is- on purpose: a bare `.error` here
+   collided with the full-width .error box rule below and inflated every
+   badge to 30px of padding. */
+.badge.is-checking { background: rgba(150,150,150,0.14); color: var(--ink-3); border-color: rgba(150,150,150,0.28); }
+.badge.is-ok       { background: rgba(78,204,163,0.15); color: var(--acc); border-color: rgba(78,204,163,0.4); }
+.badge.is-warning  { background: rgba(233,180,76,0.15); color: var(--warm); border-color: rgba(233,180,76,0.45); }
+.badge.is-error    { background: rgba(150,150,150,0.11); color: var(--ink-4); border-color: rgba(150,150,150,0.24); }
+
+.badge-details {
+  margin-top: 10px; font-size: 0.76rem; color: var(--ink-2);
+  line-height: 1.55; text-align: left; display: none;
+  background: rgba(9, 14, 30, 0.55); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 11px 13px;
+}
+.badge-details.show { display: block; }
+.badge-details .vd-pass { color: var(--acc); }
+.badge-details .vd-fail { color: var(--warm); }
+.badge-details .vd-skip { color: var(--ink-4); }
+.badge-details b { color: var(--ink); }
+
+/* revision strip under each chart header */
+.rev-strip {
+  margin: 0 0 8px; font-size: 0.76rem; color: var(--ink-2);
+  min-height: 1.15em; line-height: 1.5;
+}
+.rev-strip b { color: var(--ink); }
+.rev-hot { color: var(--warm); font-weight: 700; }
+
+/* ---- tables ------------------------------------------------------------- */
+
+/* Wide tables must scroll INSIDE their container, never push the page sideways.
+   Grid and flex children default to min-width:auto, which is what let the
+   700px-wide market table blow the body out horizontally on a phone. */
+.table-scroll { overflow-x: auto; max-width: 100%; }
+.market-grid > *, .graphs-container > *, .stack > *, .panel, .mk-card { min-width: 0; }
+
+table.grid {
+  border-collapse: collapse; width: 100%;
+  font-size: 0.86rem; min-width: 600px;
+}
+table.grid caption {
+  text-align: left; color: var(--ink); font-weight: 700;
+  font-size: 0.95rem; margin-bottom: 11px;
+}
+table.grid th, table.grid td {
+  padding: 8px 10px; text-align: center;
+  border-bottom: 1px solid var(--line);
+}
+table.grid thead th {
+  color: var(--acc); font-weight: 700;
+  border-bottom: 2px solid rgba(78, 204, 163, 0.3);
+  font-size: 0.8rem;
+}
+table.grid thead th .sub {
+  display: block; font-weight: 400; color: var(--ink-4); font-size: 0.68rem;
+}
+table.grid th.time-col, table.grid td.time-col {
+  text-align: left; color: var(--ink-2); font-weight: 700;
+  position: sticky; left: 0; background: var(--bg-2); font-variant-numeric: tabular-nums;
+}
+table.grid td.today-col, table.grid th.today-col { color: var(--acc); font-weight: 700; }
+table.grid tbody tr:hover td { filter: brightness(1.16); }
+table.grid td.na { color: var(--ink-4); }
+table.grid td { font-variant-numeric: tabular-nums; transition: filter var(--hover-fast) ease; }
+
+/* boxed table used by Future / Market / LIVE */
+table.box {
+  border-collapse: collapse; width: 100%; font-size: 0.86rem; min-width: 700px;
+}
+table.box th, table.box td {
+  padding: 9px 11px; text-align: center; border: 1px solid var(--line); vertical-align: top;
+}
+table.box thead th {
+  color: var(--acc); font-weight: 700; background: rgba(15, 52, 96, 0.5); font-size: 0.82rem;
+}
+table.box thead th .col-date { display: block; font-weight: 400; color: var(--ink-3); font-size: 0.7rem; }
+table.box thead th .col-day  { display: block; font-weight: 600; color: #7fd8bd; font-size: 0.7rem; }
+table.box th.row-label {
+  text-align: left; color: var(--ink-2); font-weight: 650;
+  background: var(--bg-2); white-space: nowrap; width: 1%;
+}
+table.box td.blank { color: var(--ink-4); }
+table.box tbody tr:hover > td { background: rgba(255, 255, 255, 0.028); }
+
+/* the "help" affordance on hoverable row labels */
+.has-tip { cursor: help; border-bottom: 1px dotted rgba(255,255,255,0.3); }
+th.row-label.has-tip, .cat.has-tip { text-underline-offset: 3px; }
+
+/* day-over-day swing colours (toward / away from higher solar FVE output) */
+.swing-vg { background: rgba(46, 204, 113, 0.55); color: #06231a; font-weight: 700; }
+.swing-g  { background: rgba(46, 204, 113, 0.26); }
+.swing-r  { background: rgba(231, 76, 60, 0.30); }
+.swing-dr { background: rgba(192, 57, 43, 0.66); color: #fff; font-weight: 700; }
+
+.legend-note {
+  margin-top: 13px; font-size: 0.75rem; color: var(--ink-3);
+  line-height: 1.65; text-align: left;
+}
+.legend-note .swatch {
+  display: inline-block; width: 14px; height: 14px;
+  border-radius: 3px; vertical-align: middle; margin: 0 4px 0 10px;
+}
+.legend-note .note { margin-top: 6px; color: var(--ink-4); }
+
+.prep-note { text-align: left; font-size: 0.78rem; color: #e6c98a; line-height: 1.4; }
+
+/* ---- LIVE --------------------------------------------------------------- */
+
+.live-value { font-size: 1.4rem; font-weight: 700; color: #eaf2ff; display: block; line-height: 1.15; }
+.live-change { font-size: 0.8rem; font-weight: 700; display: block; margin-top: 4px; }
+.live-sub { font-size: 0.73rem; color: var(--ink-3); display: block; margin-top: 3px; }
+.live-up { color: #ff9e6d; }
+.live-down { color: var(--cool); }
+.live-flat { color: var(--ink-3); }
+.live-storm { color: var(--warm); font-weight: 700; }
+.live-updated { text-align: center; margin-top: 12px; font-size: 0.76rem; color: var(--ink-4); }
+
+/* ===========================================================================
+   MARKET — v3.0 redesign
+   The v2.0 version put a sentence in every cell and a paragraph of legend
+   underneath. This version leads with four stat tiles and one unambiguous
+   residual-load verdict; the explanations moved into hovers.
+   =========================================================================== */
+
+.market-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 1240px) { .market-grid { grid-template-columns: 1fr; } }
+
+.mk-card {
+  background: linear-gradient(180deg, rgba(30, 40, 74, 0.85) 0%, var(--bg-2) 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+.mk-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 3px; }
+.mk-head h2 { font-size: 1.08rem; color: var(--ink); font-weight: 700; }
+.mk-head .mk-when { font-size: 0.76rem; color: var(--ink-3); font-weight: 600; }
+.mk-cities { color: var(--ink-4); font-size: 0.71rem; margin-bottom: 14px; }
+
+/* the four headline tiles */
+.mk-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-bottom: 13px; }
+@media (max-width: 620px) { .mk-tiles { grid-template-columns: repeat(2, 1fr); } }
+
+.tile {
+  background: rgba(9, 14, 30, 0.5);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 11px 12px;
+  transition: border-color var(--hover-fast) ease, background var(--hover-fast) ease;
+}
+.tile:hover { border-color: var(--line-strong); background: rgba(9, 14, 30, 0.72); }
+.tile .k {
+  font-size: 0.64rem; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--ink-4); font-weight: 800; margin-bottom: 5px;
+}
+.tile .v { font-size: 1.32rem; font-weight: 800; color: var(--ink); line-height: 1.1; letter-spacing: -0.02em; }
+.tile .d { font-size: 0.73rem; color: var(--ink-3); margin-top: 4px; font-weight: 600; }
+
+.tile.tighter { border-color: rgba(233,69,96,0.5); background: rgba(233,69,96,0.1); }
+.tile.tighter .v { color: #ff8098; }
+.tile.softer  { border-color: rgba(78,204,163,0.5); background: rgba(78,204,163,0.1); }
+.tile.softer  .v { color: var(--acc); }
+.tile.neutral .v { color: var(--ink-2); }
+
+/* index bar inside a tile / cell */
+.bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.09); overflow: hidden; margin-top: 7px; }
+.bar > i { display: block; height: 100%; border-radius: 3px; }
+.bar.solar > i { background: linear-gradient(90deg, #b07d1f, var(--warm)); }
+.bar.wind  > i { background: linear-gradient(90deg, #0a7f81, var(--cyan)); }
+
+.delta { font-weight: 800; font-size: 0.73rem; }
+.delta.up { color: var(--acc); }
+.delta.down { color: var(--hot); }
+.delta.flat { color: var(--ink-3); }
+
+/* risk chips */
+.risks { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+.risk {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+  border: 1px solid transparent; cursor: help; white-space: nowrap;
+  transition: filter var(--hover-fast) ease, transform var(--hover-fast) ease;
+}
+.risk:hover { filter: brightness(1.25); transform: translateY(-1px); }
+.risk .rv { opacity: 0.85; font-weight: 600; }
+.risk-high   { background: rgba(233,69,96,0.17); color: #ff8098; border-color: rgba(233,69,96,0.45); }
+.risk-medium { background: rgba(233,180,76,0.15); color: var(--warm); border-color: rgba(233,180,76,0.4); }
+.risk-low    { background: rgba(109,182,255,0.13); color: var(--cool); border-color: rgba(109,182,255,0.35); }
+.risk-none   { color: var(--ink-4); font-size: 0.75rem; }
+
+/* residual-load verdict badge */
+.verdict {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.76rem; font-weight: 800; padding: 4px 10px; border-radius: 7px;
+  letter-spacing: 0.02em;
+}
+.verdict.tighter { background: rgba(233,69,96,0.17); color: #ff8098; }
+.verdict.softer  { background: rgba(78,204,163,0.16); color: var(--acc); }
+.verdict.neutral { background: rgba(255,255,255,0.07); color: var(--ink-3); }
+.verdict.unknown { background: rgba(255,255,255,0.05); color: var(--ink-4); }
+.drivers { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 6px; }
+.driver {
+  font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+  background: rgba(255,255,255,0.06); color: var(--ink-3); white-space: nowrap;
+}
+.driver.tighter { color: #ff8098; }
+.driver.softer { color: var(--acc); }
+
+.mk-big { font-size: 1.06rem; font-weight: 800; color: var(--ink); display: block; line-height: 1.2; }
+.mk-sub { font-size: 0.71rem; color: var(--ink-3); display: block; margin-top: 3px; }
+.mk-dd {
+  display: inline-block; margin-top: 5px; padding: 1px 8px; border-radius: 999px;
+  font-size: 0.68rem; font-weight: 800;
+}
+.mk-dd.heat { background: rgba(109, 182, 255, 0.15); color: var(--cool); }
+.mk-dd.cool { background: rgba(255, 158, 109, 0.15); color: #ff9e6d; }
+.mk-dd.none { background: rgba(150, 150, 150, 0.12); color: var(--ink-3); }
+
+/* yesterday column: context (actual), not a signal */
+table.box th.ctx, table.box td.ctx {
+  background: rgba(255, 255, 255, 0.045);
+  border-right: 2px solid rgba(78, 204, 163, 0.35);
+}
+.actual-tag { display: block; font-size: 0.61rem; font-weight: 800; color: var(--ink-3); letter-spacing: 0.05em; }
+
+.stability-strip {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  font-size: 0.76rem; color: var(--ink-2);
+  background: rgba(9, 14, 30, 0.42); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 13px;
+}
+.stability-strip .lab { color: var(--ink-4); font-weight: 800; font-size: 0.64rem; letter-spacing: 0.09em; text-transform: uppercase; white-space: nowrap; }
+.stability-strip .cap { color: var(--ink-4); font-weight: 700; }
+.stability-strip b { color: var(--ink); }
+
+/* ---- misc --------------------------------------------------------------- */
+
+.flag { width: 1.15em; height: 0.77em; vertical-align: -0.08em; border-radius: 2px; flex: none; }
+
+.error {
+  text-align: center; padding: 30px; color: var(--hot);
+  background: rgba(233, 69, 96, 0.1); border: 1px solid rgba(233, 69, 96, 0.25);
+  border-radius: var(--radius-sm);
+}
+.loading { color: var(--ink-3); padding: 22px; text-align: center; font-size: 0.86rem; }
+
+.footer-note {
+  text-align: center; margin-top: 22px; color: var(--ink-4); font-size: 0.74rem; line-height: 1.7;
+}
+
+.stack { display: flex; flex-direction: column; gap: 18px; }
+
+/* ===========================================================================
+   TOOLTIP
+   One floating element, driven by data-tip / data-tip-title. Bigger type,
+   a real title line, an arrow, viewport clamping — and it appears in
+   TIP_DELAY_MS (120 ms) instead of the browser's native half-second.
+   =========================================================================== */
+
+#ztip {
+  position: fixed;
+  z-index: 9999;
+  max-width: 380px;
+  background: linear-gradient(180deg, #222c50 0%, #161d38 100%);
+  border: 1px solid rgba(126, 154, 214, 0.32);
+  border-radius: 11px;
+  box-shadow: var(--shadow-lg);
+  padding: 11px 14px;
+  color: var(--ink);
+  font-size: 0.86rem;       /* v2.0 native tooltips were ~0.72rem system text */
+  line-height: 1.55;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(5px) scale(0.98);
+  transition: opacity var(--tip-fade) ease, transform var(--tip-fade) cubic-bezier(.2,.8,.3,1);
+  will-change: opacity, transform;
+}
+#ztip.show { opacity: 1; transform: translateY(0) scale(1); }
+#ztip .tip-title {
+  display: block; font-weight: 800; color: var(--acc);
+  font-size: 0.8rem; letter-spacing: 0.02em;
+  margin-bottom: 5px; text-transform: uppercase;
+}
+#ztip .tip-body { color: var(--ink-2); }
+#ztip .tip-body b, #ztip .tip-body strong { color: var(--ink); font-weight: 700; }
+#ztip .tip-arrow {
+  position: absolute; width: 10px; height: 10px;
+  background: #1c2444;
+  border-left: 1px solid rgba(126, 154, 214, 0.32);
+  border-top: 1px solid rgba(126, 154, 214, 0.32);
+  transform: rotate(45deg);
+}
+#ztip.below .tip-arrow { top: -6px; }
+#ztip.above .tip-arrow { bottom: -6px; transform: rotate(225deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  #ztip { transition: opacity 0.01s linear; transform: none; }
+  #ztip.show { transform: none; }
+  * { transition-duration: 0.01s !important; }
+}
+
+@media (max-width: 640px) {
+  body { padding: 14px 12px 30px; }
+  .chart-wrapper { height: 300px; }
+  .brand h1 { font-size: 1.15rem; }
+  #ztip { max-width: 84vw; font-size: 0.82rem; }
+}

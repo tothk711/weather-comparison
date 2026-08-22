@@ -1,3 +1,23 @@
+# v2.0.0 handoff note (2026-07-11)
+
+Resynced to the GitHub main line (github.com/tothk711/Temperature-Zephyr, v1.4.1) and
+ported the parallel-branch work on top — see README → Changelog → v2.0.0. Key internals:
+
+- `fetchAndCache()` is the single fetch-and-store path (freeze applied everywhere,
+  incl. `getMedianWeather`). Pure helpers: `freezePastDays`, `computePastAvg`.
+- `computeRevisions` / `reviseDay` (pure) + `/api/revisions/:city?source=median|openmeteo`.
+- Cross-check: `fetchAllModelTemps` (ONE batched `models=` call), `fetchMetno` returns
+  `{today, tomorrow}`, `/api/crosscheck` has a `tomorrow` block + `meanSpread` per day.
+- Frontend: `Tomorrow Fc` dataset/legend/Table columns, rev strip (`leftRevText`/`AgreeText`),
+  generalized `applyCrossCheck` (today+tomorrow), History/Table forecast cells = light bg +
+  dark italic via `heatColorLight`, Market `🔮 Fc stability` row, name "Weather Comparison 2.0".
+- Tests: 22 unit (`npm test`) + mocked-API boot (`node --require ./tests/mock-fetch.js server.js`).
+- Live smoke test after deploy still required (sandbox has no network): check the revision
+  strip under the graphs, `tomorrow` in `/api/crosscheck/Budapest`, `/api/revisions/Prague`,
+  and that History forecast cells render light-with-dark-text.
+
+---
+
 # Temperature Zephyr — Handoff Note
 
 **Date:** 2026-07-07 · **Current version:** 1.4.1 (main folder) · **Snapshot:** `Versions/1.0/` · **Baseline:** 1.0.0 (`Temperature1.0/` — see note below)

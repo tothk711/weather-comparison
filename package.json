@@ -1,18 +1,26 @@
 {
-  "name": "weather-comparison",
-  "version": "1.4.1",
-  "description": "Weather temperature comparison app",
+  "name": "zephyr-weather",
+  "version": "3.0.0",
+  "description": "Zephyr Weather — temperature and power-fundamentals dashboard for Central Europe",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/server.test.js"
+    "test": "node --test \"tests/**/*.test.js\"",
+    "test:watch": "node --test --watch \"tests/**/*.test.js\"",
+    "dev": "node --watch server.js",
+    "mock": "node --require ./tests/mock-fetch.js server.js",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "pg": "^8.22.0",
-    "node-cron": "^3.0.3"
+    "express": "^4.22.2",
+    "node-cron": "^4.6.0",
+    "pg": "^8.23.0"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "globals": "^17.11.0"
   }
 }

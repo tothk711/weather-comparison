@@ -3,6 +3,7 @@ node_modules/
 
 # Environment variables / secrets
 .env
+.env.local
 
 # Logs
 *.log
@@ -11,3 +12,18 @@ npm-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Frozen version snapshots (kept locally, never committed)
+Versions/
+
+# Editor / tooling
+.eslintcache
+.vscode/
+.idea/
+
+# Local-only working folders from the v3.0 upgrade — not part of the project.
+# _v2.0-backup/ is a copy of the pre-3.0 files (git history already has them).
+# _to_delete/ holds files this mount could not delete; remove it in Explorer.
+_v2.0-backup/
+_to_delete/
+*.zip

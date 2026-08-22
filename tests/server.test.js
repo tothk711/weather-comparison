@@ -155,3 +155,103 @@ test('parsePreparation: missing hours stay null (never invented)', () => {
   assert.equal(d0.temp.h12, null);
   assert.equal(d0.temp.h20, null);
 });
+
+// ---- v2.0.0: frozen history, forecast revisions, tomorrow cross-check --------
+
+function wx2(dates, val) {
+  const mk = d => ({ date: d, temps: Array(24).fill(val) });
+  return {
+    sevenDaysAgo: mk(dates[0]), sixDaysAgo: mk(dates[1]), fiveDaysAgo: mk(dates[2]),
+    fourDaysAgo: mk(dates[3]), threeDaysAgo: mk(dates[4]), twoDaysAgo: mk(dates[5]),
+    yesterday: mk(dates[6]), today: mk(dates[7]),
+    todayForecast: mk(dates[7]), tomorrowForecast: mk(dates[8]),
+    tomorrow: mk(dates[8]), dayAfterTomorrow: mk(dates[9])
+  };
+}
+const D10 = ['2026-06-25','2026-06-26','2026-06-27','2026-06-28','2026-06-29',
+             '2026-06-30','2026-07-01','2026-07-02','2026-07-03','2026-07-04'];
+
+test('freezePastDays: 2+ day-old days keep first-seen values; yesterday/today update', () => {
+  const cached = wx2(D10, 15);
+  const fresh = wx2(D10, 18);
+  const n = s.freezePastDays(fresh, cached, true);
+  assert.equal(fresh.twoDaysAgo.temps[10], 15);   // frozen
+  assert.equal(fresh.sevenDaysAgo.temps[0], 15);  // frozen
+  assert.equal(fresh.yesterday.temps[10], 18);    // still updating
+  assert.equal(fresh.today.temps[10], 18);
+  assert.equal(n, 6 * 24);
+  assert.equal(fresh.pastDaysAvg.temps[5], 15);   // avg recomputed
+});
+
+test('freezePastDays: gap-fills cached nulls, matches by date after roll-over', () => {
+  const cached = wx2(D10, 15);
+  cached.twoDaysAgo.temps[7] = null;
+  const fresh = wx2(D10, 18);
+  s.freezePastDays(fresh, cached, true);
+  assert.equal(fresh.twoDaysAgo.temps[7], 18);    // hole filled from fresh
+  assert.equal(fresh.twoDaysAgo.temps[8], 15);
+  // day roll-over: cache one day older than fresh -> match by date still works
+  const shifted = D10.map((_, i) => D10[Math.min(i + 1, 9)] );
+  const fresh2 = wx2([D10[1],D10[2],D10[3],D10[4],D10[5],D10[6],D10[7],D10[8],D10[9],'2026-07-05'], 18);
+  const cached2 = wx2(D10, 15);
+  s.freezePastDays(fresh2, cached2, true);
+  assert.equal(fresh2.twoDaysAgo.temps[3], 15);   // was cached.yesterday (2026-07-01)
+});
+
+test('freezePastDays: disabled or missing cache -> untouched', () => {
+  const fresh = wx2(D10, 18);
+  assert.equal(s.freezePastDays(fresh, wx2(D10, 15), false), 0);
+  assert.equal(fresh.twoDaysAgo.temps[0], 18);
+  assert.equal(s.freezePastDays(fresh, null, true), 0);
+});
+
+test('reviseDay: avg / peak / max; null when overlap too small', () => {
+  const prev = Array(24).fill(20);
+  const curr = Array(24).fill(21);
+  curr[18] = 24;
+  const r = s.reviseDay(curr, prev);
+  assert.equal(r.max, 4);
+  assert.equal(r.maxHour, 18);
+  assert.ok(r.avg > 1 && r.avg < 1.2);
+  assert.ok(r.peakAvg > r.avg);
+  const sparse = Array(24).fill(null); sparse[0] = 20; sparse[1] = 20;
+  assert.equal(s.reviseDay(Array(24).fill(21), sparse), null);
+});
+
+test('computeRevisions: today + tomorrow vs stored prev-run series', () => {
+  const w = wx2(D10, 20);
+  w.today.temps = Array(24).fill(22);
+  w.tomorrow.temps = Array(24).fill(17);
+  const r = s.computeRevisions(w);
+  assert.equal(r.today.avg, 2);
+  assert.equal(r.tomorrow.avg, -3);
+  assert.equal(s.computeRevisions(null), null);
+});
+
+test('parseWeatherPayload: previous-run values land in tomorrowForecast too', () => {
+  const today = s.getDateString(0), tom = s.getDateString(1);
+  const mk = (d, h) => `${d}T${String(h).padStart(2, '0')}:00`;
+  const data = { hourly: { time: [mk(today, 5)], temperature_2m: [20] } };
+  const prev = { hourly: { time: [mk(today, 5), mk(tom, 5)], temperature_2m_previous_day1: [17, 16] } };
+  const r = s.parseWeatherPayload(data, prev);
+  assert.equal(r.todayForecast.temps[5], 17);
+  assert.equal(r.tomorrowForecast.temps[5], 16);
+  assert.equal(r.tomorrow.temps[5], null);
+});
+
+test('analyzeCrossCheck: model-agreement spread summary', () => {
+  const mkSrc = v => Array(24).fill(v);
+  const res = s.analyzeCrossCheck(Array(24).fill(20), { A: mkSrc(19), B: mkSrc(20), C: mkSrc(21.5) });
+  assert.equal(res.meanSpread, 2.5);
+  assert.equal(res.maxSpread, 2.5);
+  assert.equal(s.analyzeCrossCheck(Array(24).fill(20), {}).meanSpread, null);
+});
+
+test('seriesToDays: splits one series into today/tomorrow 24-slot arrays', () => {
+  const today = s.getDateString(0), tom = s.getDateString(1);
+  const time = [`${today}T05:00`, `${tom}T06:00`, '2020-01-01T00:00'];
+  const r = s.seriesToDays(time, [11, 12, 13]);
+  assert.equal(r.today[5], 11);
+  assert.equal(r.tomorrow[6], 12);
+  assert.equal(r.today[0], null);
+});

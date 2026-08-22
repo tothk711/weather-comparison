@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Zephyr Weather mark: a temperature bar. Cold at the foot, hot at the
+       head, with a scale notched down the side. Reads correctly at 16px. -->
+  <defs>
+    <linearGradient id="t" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0"    stop-color="#3b82f6"/>
+      <stop offset="0.42" stop-color="#4ecca3"/>
+      <stop offset="0.72" stop-color="#e9b44c"/>
+      <stop offset="1"    stop-color="#e94560"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="32" height="32" rx="7" fill="#16213e"/>
+  <rect x="11" y="4" width="10" height="24" rx="5" fill="#0b1226"/>
+  <rect x="12.5" y="5.5" width="7" height="21" rx="3.5" fill="url(#t)"/>
+  <g fill="#8fa3b8">
+    <rect x="23" y="8"  width="4" height="1.6" rx="0.8"/>
+    <rect x="23" y="13" width="4" height="1.6" rx="0.8"/>
+    <rect x="23" y="18" width="4" height="1.6" rx="0.8"/>
+    <rect x="23" y="23" width="4" height="1.6" rx="0.8"/>
+  </g>
+</svg>
