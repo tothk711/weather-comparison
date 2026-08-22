@@ -182,6 +182,7 @@ run, and how tightly the independent models agree) and a four-day table.
 Retained for backwards compatibility: `GET /api/preparation/:city` (→ Future) and
 `GET /api/history/:city?week=` (→ Weekly, current ISO year only).
 
+
 ---
 
 ## Getting started

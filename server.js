@@ -131,4 +131,5 @@ module.exports = {
   // back-compat aliases for v2.0 names
   parsePreparation: future.parseFuture,
   buildHistoryTable: weekly.buildWeeklyTable,
+
 };

@@ -4,3 +4,4 @@ Status: verified — 128 unit + route tests green, lint clean, 0 npm audit findi
         every tab exercised in a headless browser at three viewport widths.
 Run it: npm install && npm start   (offline: npm run mock)
 Renamed from "Temperature Zephyr / Weather Comparison 2.0" in this release.
+

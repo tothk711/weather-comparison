@@ -2,6 +2,7 @@
   "name": "zephyr-weather",
   "version": "3.0.0",
   "description": "Zephyr Weather — temperature and power-fundamentals dashboard for Central Europe",
+
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
