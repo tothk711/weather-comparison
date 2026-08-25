@@ -36,10 +36,14 @@ const SERIES = [
 
 const VALUE_HOURS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
 
+// A model cell this far (°C) from the airport station gets a red ring.
+const OBS_DRIFT_WARN_C = 2;
+
 const TIPS = {
   source: 'Which model data every line uses. <b>Global median</b> (the default) takes the per-hour median of ECMWF, DWD ICON, NOAA GFS, Météo-France and Open-Meteo — one outlying model cannot move the line. <b>Openmeteo</b> is the single best-match model. The Future and Weekly tabs follow the same setting, so the tabs cannot disagree.',
   mode: 'Show the same series as a chart or as numbers. Identical data either way — the Values view is just the chart read off a grid.',
   dec: 'Decimal places in the Values grid — click to cycle 0 / 1 / 2.',
+  obs: 'Measured temperatures from the city\'s airport weather station (METAR reports). This is a thermometer, not a model — every other number in the app is model output. Use it to judge which columns to trust: model cells sitting ≥ 2 °C from the station get a red ring. Czechia (Avg) shows the mean of the four Czech airport stations. Blank = no report for that hour.',
   czechia: 'Unweighted mean of Prague, Brno, Plzen and Ostrava, hour by hour. Note this is NOT the Market tab\'s demand temperature, which is population-weighted.',
   verify: 'Automatic sanity checks on the downloaded data: plausible range, no impossible hourly jumps, recent days complete, coordinates match the city, and agreement with the independent ERA5 reanalysis archive. Click for the detail.',
   crosscheck: 'Compares the displayed values against independent models and MET Norway. Where the shown value is a clear outlier against a tight consensus, the chart shows the consensus median instead (the raw value stays in the point tooltip). Click for the detail.',
@@ -168,6 +172,7 @@ class Panel {
       this.loadVerify();
       this.loadCrossCheck();
       this.loadRevisions();
+      this.loadObserved();
     } catch (err) {
       console.error(`Could not load ${this.city}:`, err);
       this.q('.chart-wrapper').innerHTML = `<div class="error">Could not load data for ${esc(this.city)}.</div>`;
@@ -313,9 +318,37 @@ class Panel {
     const vMin = vals.length ? Math.min(...vals) : 0;
     const vMax = vals.length ? Math.max(...vals) : 0;
 
+    // Observed (airport METAR) reference columns sit next to the model day
+    // they check. Deliberately NOT part of the heat map: blue frame, neutral
+    // background — a ruler, not another model.
+    const obs = this.obs;
+    const obsFor = (dayKey, h) => {
+      if (!obs || !obs.hours) return null;
+      const day = data[dayKey];
+      if (!day || !day.date || day.date === 'avg') return null;
+      const v = obs.hours[`${day.date}T${hh(h)}`];
+      return isNum(v) ? v : null;
+    };
+    const OBS_AFTER = { yesterday: 'Yest Obs', today: 'Today Obs' };
+    const hasObs = dayKey => VALUE_HOURS.some(h => obsFor(dayKey, h) !== null);
+    const columns = [];
+    for (const s of SERIES) {
+      columns.push({ kind: 'model', s });
+      if (OBS_AFTER[s.key] && hasObs(s.key)) {
+        columns.push({ kind: 'obs', dayKey: s.key, short: OBS_AFTER[s.key] });
+      }
+    }
+    const stationLabel = (obs && obs.stations && obs.stations.length)
+      ? obs.stations.join('+') : 'station';
+
     let html = `<table class="grid"><caption>${esc(displayName)} — every 2 hours (°C, CET/CEST)</caption>`
       + '<thead><tr><th class="time-col">Time</th>';
-    for (const s of SERIES) {
+    for (const col of columns) {
+      if (col.kind === 'obs') {
+        html += `<th class="obs-col has-tip"${tipAttr(TIPS.obs, 'Observed (' + stationLabel + ')')}>${esc(col.short)}<span class="sub">${esc(stationLabel)}</span></th>`;
+        continue;
+      }
+      const s = col.s;
       const day = data[s.key];
       const d = day && day.date && day.date !== 'avg' ? `<span class="sub">${esc(day.date)}</span>` : '';
       const tip = s.fc && s.key.endsWith('Forecast') ? tipAttr(TIPS.fcCols, s.label) : '';
@@ -323,19 +356,49 @@ class Panel {
     }
     html += '</tr></thead><tbody>';
 
+    const drift = { yesterday: [], today: [] };
     for (const h of VALUE_HOURS) {
       html += `<tr><td class="time-col">${hh(h)}</td>`;
-      for (const s of SERIES) {
+      for (const col of columns) {
+        if (col.kind === 'obs') {
+          const o = obsFor(col.dayKey, h);
+          html += o === null
+            ? '<td class="obs-cell na">—</td>'
+            : `<td class="obs-cell">${fmtTemp(o, decimals)}</td>`;
+          continue;
+        }
+        const s = col.s;
         const v = data[s.key] && data[s.key].temps ? data[s.key].temps[h] : null;
         if (!isNum(v)) { html += '<td class="na">—</td>'; continue; }
+        // Ring a model cell that drifts ≥ 2 °C from what the station measured.
+        let extra = '';
+        if (OBS_AFTER[s.key]) {
+          const o = obsFor(s.key, h);
+          if (o !== null) {
+            const dAbs = Math.abs(v - o);
+            drift[s.key].push(dAbs);
+            if (dAbs >= OBS_DRIFT_WARN_C) {
+              extra = ` class="drift" title="Station measured ${fmtTemp(o, 1)} — shown value ${fmtTemp(v, 1)} (Δ ${dAbs.toFixed(1)}°)"`;
+            }
+          }
+        }
         html += s.fc
-          ? `<td style="background:${heatColorLight(v, vMin, vMax)};color:#0d1520;font-style:italic;font-weight:600;">${fmtTemp(v, decimals)}</td>`
-          : `<td style="background:${heatColor(v, vMin, vMax)};color:#f5f7f9;font-weight:600;">${fmtTemp(v, decimals)}</td>`;
+          ? `<td${extra} style="background:${heatColorLight(v, vMin, vMax)};color:#0d1520;font-style:italic;font-weight:600;">${fmtTemp(v, decimals)}</td>`
+          : `<td${extra} style="background:${heatColor(v, vMin, vMax)};color:#f5f7f9;font-weight:600;">${fmtTemp(v, decimals)}</td>`;
       }
       html += '</tr>';
     }
+
+    const avg = a => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+    const dY = avg(drift.yesterday), dT = avg(drift.today);
+    const obsSummary = (dY !== null || dT !== null)
+      ? ` Vs station:${dY !== null ? ` yesterday avg Δ ${dY.toFixed(1)}°` : ''}${dY !== null && dT !== null ? ' ·' : ''}${dT !== null ? ` today avg Δ ${dT.toFixed(1)}°` : ''}.`
+      : '';
     html += '</tbody></table>'
-      + '<div class="legend-note">Dark cell + white text = actual · light cell + dark italic = forecast. '
+      + '<div class="legend-note">Dark cell + white text = actual · light cell + dark italic = forecast · '
+      + `<span class="has-tip"${tipAttr(TIPS.obs, 'Observed columns')}>blue “Obs” = measured at the airport</span>`
+      + ' (red ring = model ≥ 2° off the station).'
+      + obsSummary + ' '
       + `<span class="has-tip"${tipAttr(TIPS.fcCols, 'Forecast columns')}>What are the “Fc” columns?</span></div>`;
 
     this.q('.values-wrap').innerHTML = html;
@@ -356,6 +419,32 @@ class Panel {
     if (details) {
       details.innerHTML = detailsHtml || '';
       details.classList.remove('show');
+    }
+  }
+
+  // Airport-station observations for the Values view. Czechia gets the
+  // unweighted per-hour mean of the four Czech stations — the same rule the
+  // temperature average itself uses. Failure is silent: the Obs columns
+  // simply do not appear, nothing else degrades.
+  async loadObserved() {
+    try {
+      const cities = this.city === 'Czechia' ? CZ_AVERAGE_OF : [this.city];
+      const results = await Promise.all(cities.map(c =>
+        getJson(`/api/observed/${encodeURIComponent(c)}`).catch(() => null)));
+      const valid = results.filter(r => r && r.hours && Object.keys(r.hours).length);
+      if (!valid.length) { this.obs = null; return; }
+      const hours = {};
+      const keys = new Set();
+      valid.forEach(r => Object.keys(r.hours).forEach(k => keys.add(k)));
+      for (const k of keys) {
+        const vs = valid.map(r => r.hours[k]).filter(isNum);
+        if (vs.length) hours[k] = +(vs.reduce((a, b) => a + b, 0) / vs.length).toFixed(1);
+      }
+      this.obs = { hours, stations: valid.map(r => r.station && r.station.icao).filter(Boolean) };
+      if (viewMode === 'values') this.renderValues();
+    } catch (err) {
+      console.error('Observed load failed:', err);
+      this.obs = null;
     }
   }
 

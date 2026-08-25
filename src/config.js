@@ -75,21 +75,25 @@ const config = {
       historicalForecast: 'https://historical-forecast-api.open-meteo.com/v1/forecast',
       geocoding:          'https://geocoding-api.open-meteo.com/v1/search',
       metno:              'https://api.met.no/weatherapi/locationforecast/2.0/compact',
+      // Aviation Weather Center (NOAA) METAR feed — real station observations,
+      // free, no key. The only non-model numbers in the app.
+      metar:              'https://aviationweather.gov/api/data/metar',
     },
     // met.no's terms require a real contact address. Without one the
     // cross-check silently loses its only non-Open-Meteo source.
     metnoUserAgent: process.env.METNO_USER_AGENT || '',
   },
 
+  // icao = the city's airport METAR station (observed-temperature reference).
   cities: [
-    { name: 'Prague',   lat: 50.08, lon: 14.42, country: 'CZ' },
-    { name: 'Brno',     lat: 49.19, lon: 16.61, country: 'CZ' },
-    { name: 'Plzen',    lat: 49.75, lon: 13.38, country: 'CZ' },
-    { name: 'Ostrava',  lat: 49.83, lon: 18.29, country: 'CZ' },
-    { name: 'Berlin',   lat: 52.52, lon: 13.40, country: 'DE' },
-    { name: 'Munich',   lat: 48.14, lon: 11.58, country: 'DE' },
-    { name: 'Budapest', lat: 47.50, lon: 19.04, country: 'HU' },
-    { name: 'Debrecen', lat: 47.53, lon: 21.63, country: 'HU' },
+    { name: 'Prague',   lat: 50.08, lon: 14.42, country: 'CZ', icao: 'LKPR' },
+    { name: 'Brno',     lat: 49.19, lon: 16.61, country: 'CZ', icao: 'LKTB' },
+    { name: 'Plzen',    lat: 49.75, lon: 13.38, country: 'CZ', icao: 'LKLN' },
+    { name: 'Ostrava',  lat: 49.83, lon: 18.29, country: 'CZ', icao: 'LKMT' },
+    { name: 'Berlin',   lat: 52.52, lon: 13.40, country: 'DE', icao: 'EDDB' },
+    { name: 'Munich',   lat: 48.14, lon: 11.58, country: 'DE', icao: 'EDDM' },
+    { name: 'Budapest', lat: 47.50, lon: 19.04, country: 'HU', icao: 'LHBP' },
+    { name: 'Debrecen', lat: 47.53, lon: 21.63, country: 'HU', icao: 'LHDC' },
   ],
 
   models: MODELS,
@@ -136,6 +140,13 @@ const config = {
   live: {
     CACHE_MS: 10 * 60 * 1000,
     CITIES: ['Prague', 'Brno', 'Budapest', 'Debrecen'],
+  },
+
+  observed: {
+    // Airport METAR observations — one batched request covers every station.
+    CACHE_MS: int(process.env.OBSERVED_CACHE_MS, 15 * 60 * 1000),
+    HOURS: 48,        // how far back to request reports
+    DRIFT_WARN_C: 2,  // the UI flags a model cell this far from the station
   },
 
   market: {

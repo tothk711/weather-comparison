@@ -24,6 +24,7 @@ const verify = require('./features/verify');
 const crosscheck = require('./features/crosscheck');
 const future = require('./features/future');
 const live = require('./features/live');
+const observed = require('./features/observed');
 const market = require('./features/market');
 const weekly = require('./features/weekly');
 const refresh = require('./refresh');
@@ -144,6 +145,14 @@ router.get('/live/:city', wrap(async (req, res) => {
   const city = resolveCity(req, res);
   if (!city) return;
   res.json(await live.fetchLive(city));
+}));
+
+// ---- observed (airport METAR stations) --------------------------------------
+
+router.get('/observed/:city', wrap(async (req, res) => {
+  const city = resolveCity(req, res);
+  if (!city) return;
+  res.json(await observed.getObserved(city));
 }));
 
 // ---- market -----------------------------------------------------------------

@@ -1,7 +1,8 @@
-Zephyr Weather 3.0.0
-Date: 2026-08-21
-Status: verified — 128 unit + route tests green, lint clean, 0 npm audit findings,
-        every tab exercised in a headless browser at three viewport widths.
+Zephyr Weather 3.1.0
+Date: 2026-08-25
+Status: verified — full unit + route suite green incl. new METAR observation tests,
+        lint clean, app booted end-to-end against the mocked API.
+New in 3.1.0: observed airport-station temperatures (METAR) as blue reference columns
+        in the Values view, with red drift rings when a model cell is >= 2 degC off
+        the station.
 Run it: npm install && npm start   (offline: npm run mock)
-Renamed from "Temperature Zephyr / Weather Comparison 2.0" in this release.
-

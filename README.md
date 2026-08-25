@@ -257,6 +257,26 @@ DATE rather than by key — the day keys shift every midnight, the dates do not.
 
 ## Changelog
 
+### v3.1.0 — August 2026 — observed temperatures (airport stations)
+
+Answers "why does the app disagree with Windy?" with a thermometer instead of an opinion.
+
+- **New `/api/observed/:city`** — real measured temperatures from each city's airport
+  METAR station (aviationweather.gov, free, no key): Prague LKPR, Brno LKTB, Plzen LKLN,
+  Ostrava LKMT, Berlin EDDB, Munich EDDM, Budapest LHBP, Debrecen LHDC. ONE batched
+  request covers all eight stations (rate-limit lesson applied), 15 min cache,
+  stale-on-error, standard timeout/retry/gate via the shared upstream client. Reports are
+  bucketed to the nearest whole hour on the absolute timeline (DST-safe); nothing is
+  interpolated or invented.
+- **Values view: “Obs” reference columns.** Blue-framed columns next to Yesterday and
+  Today show what the station actually measured. They are deliberately outside the heat
+  map — a ruler, not another model. Czechia (Avg) shows the mean of the four Czech
+  stations. Model cells sitting **≥ 2 °C** from the station get a red ring with the exact
+  Δ in the tooltip, and the footer shows the average Δ per day.
+- Every other number in the app remains model output; the Obs columns are the only
+  measured ones. When model and station disagree, the station is the ground truth for
+  the past — the model column tells you what the *forecast basis* thought.
+
 ### v3.0.0 — August 2026 — Zephyr Weather
 
 The name changed, the structure changed, and every P0 defect from the August 2026 audit is

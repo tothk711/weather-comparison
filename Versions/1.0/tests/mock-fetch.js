@@ -37,23 +37,12 @@ function datesFromQuery(q) {
 
 // Smooth plausible numbers; they vary by hour/day/model so medians and
 // day-over-day colouring are actually testable.
-//
-// v3.0: the day component is derived from the DATE, not from the index within
-// the response. The old version keyed off `Math.floor(i / 24)`, so the same
-// timestamp came back with a different value depending on how many past_days
-// the caller asked for — which made it impossible to test that two tabs
-// reading the same hour agree. The real API is date-deterministic; so is this.
 const MODEL_SHIFT = {
   best_match: 0, ecmwf_ifs025: 0.4, icon_seamless: -0.2,
   gfs_seamless: 1.0, meteofrance_seamless: -0.6
 };
-function dayFactor(dateStr) {
-  const [y, m, d] = String(dateStr).split('-').map(Number);
-  // A slow, repeating drift keyed to the absolute date.
-  return ((Math.floor(Date.UTC(y, m - 1, d) / 86400000) % 10) + 10) % 10 * 0.3;
-}
-function valFor(varName, dateStr, hour, shift) {
-  const base = 18 + 6 * Math.sin(((hour - 6) / 24) * 2 * Math.PI) + dayFactor(dateStr) + shift;
+function valFor(varName, dayIndex, hour, shift) {
+  const base = 18 + 6 * Math.sin(((hour - 6) / 24) * 2 * Math.PI) + dayIndex * 0.3 + shift;
   if (varName.startsWith('temperature')) return Math.round(base * 10) / 10;
   if (varName.includes('apparent')) return Math.round(base * 10) / 10;
   if (varName.includes('pressure')) return 1013 + shift;
@@ -89,20 +78,20 @@ function openMeteoPayload(u) {
         // without coverage (metno) contributes no array at all.
         models.forEach(m => {
           if (m === 'metno_seamless') return;
-          payload.hourly[`${v}_${m}`] = time.map(t => valFor(v, t.slice(0, 10), parseInt(t.slice(11, 13), 10), shiftOf(m)));
+          payload.hourly[`${v}_${m}`] = time.map((t, i) => valFor(v, Math.floor(i / 24), i % 24, shiftOf(m)));
         });
       } else {
-        payload.hourly[v] = time.map(t => valFor(v, t.slice(0, 10), parseInt(t.slice(11, 13), 10), shiftOf(models ? models[0] : null)));
+        payload.hourly[v] = time.map((t, i) => valFor(v, Math.floor(i / 24), i % 24, shiftOf(models ? models[0] : null)));
       }
     });
   }
   if (q.get('daily')) {
     payload.daily = { time: days.slice() };
     q.get('daily').split(',').forEach(v => {
-      payload.daily[v] = days.map(d => {
+      payload.daily[v] = days.map((d, i) => {
         if (v === 'weather_code') return 1;
-        if (v.includes('_max')) return 24 + dayFactor(d);
-        if (v.includes('_min')) return 12 + dayFactor(d);
+        if (v.includes('_max')) return 24 + i * 0.3;
+        if (v.includes('_min')) return 12 + i * 0.3;
         if (v.includes('radiation_sum')) return 20;
         if (v.includes('precipitation_sum')) return 0;
         if (v.includes('sunshine')) return 30000;
@@ -112,7 +101,7 @@ function openMeteoPayload(u) {
   }
   if (q.get('current')) {
     payload.current = { time: `${todayStr()}T12:00` };
-    q.get('current').split(',').forEach(v => { payload.current[v] = valFor(v, todayStr(), 12, 0); });
+    q.get('current').split(',').forEach(v => { payload.current[v] = valFor(v, 0, 12, 0); });
   }
   return { status: 200, body: payload };
 }
@@ -137,27 +126,6 @@ global.fetch = async (url) => {
       });
     }
     out = { status: 200, body: { properties: { timeseries } } };
-  } else if (u.hostname === 'aviationweather.gov') {
-    // METAR observations: one report every 30 min per station, temps on the
-    // same diurnal curve as the models but shifted so drift is non-zero.
-    const q = u.searchParams;
-    const ids = String(q.get('ids') || '').split(',').filter(Boolean);
-    const hours = parseInt(q.get('hours') || '48', 10);
-    const nowMs = Date.now();
-    const reports = [];
-    ids.forEach((icao, si) => {
-      for (let k = 0; k <= hours * 2; k++) {
-        const ms = nowMs - k * 30 * 60 * 1000;
-        const d = new Date(ms);
-        reports.push({
-          icaoId: icao,
-          obsTime: Math.floor(ms / 1000),
-          reportTime: d.toISOString().slice(0, 19).replace('T', ' '),
-          temp: valFor('temperature_2m', d.toISOString().slice(0, 10), d.getUTCHours(), 0.3 + si * 0.01),
-        });
-      }
-    });
-    out = { status: 200, body: reports };
   } else if (u.hostname === 'geocoding-api.open-meteo.com') {
     out = { status: 200, body: { results: [] } };
   } else if (u.hostname.endsWith('open-meteo.com')) {
